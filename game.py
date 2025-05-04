@@ -54,7 +54,7 @@ class Player(GameSprite):
         self.jump_count = self.jump_height
 
     def update(self, bgs):
-        if pressed_keys[K_RIGHT]:
+        if pressed_keys[K_d]:
             for bg in bgs:
                 bg.update()
 
@@ -63,6 +63,8 @@ class Player(GameSprite):
         if self.is_jumping:
             if self.jump_count == self.jump_height:
                 jump_sound.play()
+                self.image = transform.scale(  # один рядок
+                    image.load("mariojump.png"), (self.rect.width+20, self.rect.height-20))
             if self.jump_count >= -self.jump_height:
                 direction = 1
                 if self.jump_count < 0:
@@ -72,6 +74,8 @@ class Player(GameSprite):
             else:
                 self.is_jumping = False
                 self.jump_count = self.jump_height
+                self.image = transform.scale(  # один рядок
+                    image.load("Mario1.png"), (self.rect.width, self.rect.height))
 
 
 
@@ -94,7 +98,7 @@ class Enemy(GameSprite):
 
 
 # створюємо спрайти
-mario = Player(img_hero, 5, win_height - 167, 80, 100, 10)
+mario = Player(img_hero, 5, win_height - 167, 70, 100, 10)
 background1 = Background(img_back, 0,0,win_width,win_height,mario.speed)
 background2 = Background(img_back, win_width,0,win_width,win_height,mario.speed)
 
