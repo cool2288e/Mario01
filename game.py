@@ -16,7 +16,7 @@ win_width = 700
 win_height = 500
 display.set_caption("")
 window = display.set_mode((win_width, win_height))
-background = transform.scale(image.load(img_back),(win_width, win_height))
+
 
 finish = False
 run = True
@@ -24,7 +24,10 @@ run = True
 
 
 score = 0  # збито кораблів
-
+mixer.init()
+mixer.music.load("muzyka-super-mario.mp3")
+mixer.music.play(-1)
+jump_sound = mixer.Sound("pryjok-mario.mp3")
 
 
 class GameSprite(sprite.Sprite):
@@ -44,14 +47,42 @@ class GameSprite(sprite.Sprite):
 
 # клас головного гравця
 class Player(GameSprite):
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed):
+        super().__init__(player_image, player_x, player_y, size_x, size_y, player_speed)
+        self.is_jumping = False
+        self.jump_height = 12
+        self.jump_count = self.jump_height
 
-    # метод для керування спрайтом стрілками клавіатури
-    def update(self):
-        pass
+    def update(self, bgs):
+        if pressed_keys[K_RIGHT]:
+            for bg in bgs:
+                bg.update()
+
 
     def jump(self):
-        if self.rect.y < win_height - 250:
-            self.rect.y += 1
+        if self.is_jumping:
+            if self.jump_count == self.jump_height:
+                jump_sound.play()
+            if self.jump_count >= -self.jump_height:
+                direction = 1
+                if self.jump_count < 0:
+                    direction = -1
+                self.rect.y -= (self.jump_count ** 2) * 0.3 * direction
+                self.jump_count -= 1
+            else:
+                self.is_jumping = False
+                self.jump_count = self.jump_height
+
+
+
+class Background(GameSprite):
+    def update(self):
+        self.rect.x -= self.speed
+        if self.rect.x < win_width:
+            self.rect.x = win_width
+
+
+
 
 
 # клас спрайта-ворога
@@ -64,7 +95,8 @@ class Enemy(GameSprite):
 
 # створюємо спрайти
 mario = Player(img_hero, 5, win_height - 167, 80, 100, 10)
-
+background1 = Background(img_back, 0,0,win_width,win_height,mario.speed)
+background2 = Background(img_back, win_width,0,win_width,win_height,mario.speed)
 
 while run:
     # подія натискання на кнопку Закрити
@@ -74,15 +106,16 @@ while run:
         # подія натискання на пробіл - спрайт стріляє
         elif e.type == KEYDOWN:
             if e.key == K_SPACE:
-                mario.jump()
-
-
-
+                mario.is_jumping =  True
 
     if not finish:
-        window.blit(background,(0,0))
+        pressed_keys = key.get_pressed()
+        background1.reset()
+        background2.reset()
+        mario.update([background1, background2])
         mario.reset()
-
+        mario.jump()
         display.update()
+
     # цикл спрацьовує кожні 0.05 секунд
     time.delay(50)
