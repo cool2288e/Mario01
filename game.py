@@ -250,7 +250,8 @@ while run:
         # подія натискання на пробіл - спрайт стріляє
         elif e.type == KEYDOWN:
             if e.key == K_SPACE:
-                mario.is_jumping =  True
+                if not mario.is_jumping and abs(mario.rect.y - mario.ground_y) < 5:
+                    mario.is_jumping =  True
             if e.key == K_d:
                 mario.is_moving_right = True
             if e.key == K_a:
@@ -295,7 +296,7 @@ while run:
         last_platform = platforms[-1]
         right_edge = max(block["rect"].right for block in last_platform.blocks)
         if mario.rect.x > right_edge - 200 and len(platforms) < 3:  # обмеження кількості
-            new_platform = Platform(win_width + randint(100, 200), randint(150, 250), randint(2, 4))
+            new_platform = Platform(win_width + randint(100, 200), randint(100, 250), randint(2, 4))
             platforms.append(new_platform)
 
         for platform in platforms:
@@ -312,20 +313,40 @@ while run:
                             block["used"] = True
 
                     # Приземлення на платформу
-                    elif mario.jump_count < 0 and mario.rect.top < block["rect"].bottom and mario.rect.bottom > block[
-                        "rect"].top:
+                    elif mario.jump_count < 0 and abs(mario.rect.bottom - block["rect"].top) < 10 and mario.rect.centerx in range(block["rect"].left, block["rect"].right):
+
                         mario.ground_y = block["rect"].top - mario.rect.height
                         mario.rect.y = mario.ground_y
 
-        platforms = [p for p in platforms if all(block["rect"].right > 0 for block in p.blocks)]
+        platforms = [p for p in platforms if any(block["rect"].right > 0 for block in p.blocks)]
 
-        on_platform = False
+        mario_on_platform = False
         for platform in platforms:
             for block in platform.blocks:
-                if mario.rect.colliderect(block["rect"]) and abs(mario.rect.bottom - block["rect"].top) < 5:
-                    on_platform = True
-                    break
-        if not on_platform:
+                if mario.rect.colliderect(block["rect"]):
+                    # координати для зручності
+                    player_bottom = mario.rect.bottom
+                    player_top = mario.rect.top
+                    block_top = block["rect"].top
+                    block_bottom = block["rect"].bottom
+
+                    # УДАР ЗНИЗУ
+                    if mario.jump_count > 0 and player_bottom <= block_top + 10:
+                        mario.jump_count = -1
+                        mario.rect.bottom = block_top + 1
+
+                        if block["is_special"] and not block["used"]:
+                            coin = Coin(block["rect"].centerx, block["rect"].top)
+                            coins.add(coin)
+                            block["used"] = True
+
+                    # ПРИЗЕМЛЕННЯ
+                    elif mario.jump_count < 0 and player_top < block_bottom and abs(player_bottom - block_top) < 10:
+                        mario.ground_y = block_top - mario.rect.height
+                        mario.rect.y = mario.ground_y
+                        mario_on_platform = True
+
+        if not mario_on_platform:
             mario.ground_y = win_height - 168
 
         display.update()
