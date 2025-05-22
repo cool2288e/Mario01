@@ -295,19 +295,38 @@ while run:
         last_platform = platforms[-1]
         right_edge = max(block["rect"].right for block in last_platform.blocks)
         if mario.rect.x > right_edge - 200 and len(platforms) < 3:  # обмеження кількості
-            new_platform = Platform(win_width + randint(100, 200), randint(250, 350), randint(2, 4))
+            new_platform = Platform(win_width + randint(100, 200), randint(150, 250), randint(2, 4))
             platforms.append(new_platform)
 
         for platform in platforms:
             for block in platform.blocks:
-                if mario.rect.colliderect(block["rect"]) and mario.jump_count > 0:
-                    mario.jump_count = -1  # розворот стрибка
-                    mario.rect.bottom = block["rect"].top + 1
-                    if block["is_special"] and not block["used"]:
-                        coin = Coin(block["rect"].centerx, block["rect"].top)
-                        coins.add(coin)
-                        block["used"] = True
+                if mario.rect.colliderect(block["rect"]):
+                    # Стрибок вгору, удар знизу
+                    if mario.jump_count > 0 and mario.rect.bottom > block["rect"].top:
+                        mario.jump_count = -1  # розворот стрибка
+                        mario.rect.bottom = block["rect"].top + 1
+
+                        if block["is_special"] and not block["used"]:
+                            coin = Coin(block["rect"].centerx, block["rect"].top)
+                            coins.add(coin)
+                            block["used"] = True
+
+                    # Приземлення на платформу
+                    elif mario.jump_count < 0 and mario.rect.top < block["rect"].bottom and mario.rect.bottom > block[
+                        "rect"].top:
+                        mario.ground_y = block["rect"].top - mario.rect.height
+                        mario.rect.y = mario.ground_y
+
         platforms = [p for p in platforms if all(block["rect"].right > 0 for block in p.blocks)]
+
+        on_platform = False
+        for platform in platforms:
+            for block in platform.blocks:
+                if mario.rect.colliderect(block["rect"]) and abs(mario.rect.bottom - block["rect"].top) < 5:
+                    on_platform = True
+                    break
+        if not on_platform:
+            mario.ground_y = win_height - 168
 
         display.update()
 
